@@ -1,4 +1,4 @@
-# birdnet-api2ha-custom_card
+# BirdNET-Go Table for API2HA
 
 Carte Lovelace personnalisée pour Home Assistant — visualisation des détections d'oiseaux BirdNET-Go sous forme de heatmap, avec navigation par heure, jour, semaine et mois.
 
