@@ -72,6 +72,12 @@ Remplacer `192.168.x.x` par l'IP du serveur où tourne **birdnet-api2ha** (port 
 - Les photos d'oiseaux proviennent du cache `image_caches` de BirdNET-Go (s'enrichit au fil des détections).
 - En mode **Heure**, la barre *Daylight* indique nuit / lever / jour / coucher selon les données de BirdNET-Go.
 
+### Fuseau horaire
+
+- La carte utilise la **date locale du navigateur** (pas l’UTC) pour « aujourd’hui » et la navigation jour par jour.
+- Les colonnes **0–23 h** viennent de l’API : SQLite classe les détections avec l’heure **locale du serveur** qui exécute **birdnet-api2ha**. En Docker, sans variable `TZ`, ce serveur est souvent en **UTC** → décalage possible par rapport à votre lieu.
+- **À faire :** donner au conteneur / machine de l’API la même **`TZ`** que BirdNET-Go (ex. `America/Toronto`). Voir la section *Fuseau horaire* dans le README de [birdnet-api2ha](https://github.com/djiesr/birdnet-api2ha).
+
 ---
 
 ## Mise à jour

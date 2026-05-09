@@ -19,12 +19,20 @@ const MODES = [
   { key: "monthly", label: "Mois",    subtitle: "12 derniers mois"         },
 ];
 
+/** Date calendaire locale YYYY-MM-DD (évite toISOString() qui est en UTC). */
+function localDateISO(d = new Date()) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 class BirdnetHourlyCard extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
     this._mode  = "hourly";
-    this._date  = new Date().toISOString().slice(0, 10);
+    this._date  = localDateISO();
     this._data  = null;
     this._loading = false;
     this._error   = null;
@@ -70,7 +78,7 @@ class BirdnetHourlyCard extends HTMLElement {
   _shiftDate(days) {
     const d = new Date(this._date + "T12:00:00");
     d.setDate(d.getDate() + days);
-    this._date = d.toISOString().slice(0, 10);
+    this._date = localDateISO(d);
     this._fetch();
   }
 
@@ -144,7 +152,7 @@ class BirdnetHourlyCard extends HTMLElement {
 
   _render() {
     const modeInfo = MODES.find(m => m.key === this._mode) || MODES[0];
-    const isToday  = this._date === new Date().toISOString().slice(0, 10);
+    const isToday  = this._date === localDateISO(new Date());
     const cw       = this._cellW();
 
     const tabsHtml = MODES.map(m => `
