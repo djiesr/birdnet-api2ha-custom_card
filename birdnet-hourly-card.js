@@ -40,7 +40,8 @@ class BirdnetHourlyCard extends HTMLElement {
 
   setConfig(config) {
     if (!config.api_url) throw new Error("birdnet-hourly-card: api_url est requis");
-    this._config = { title: "Daily Activity", ...config };
+    // locale: ex. "fr-FR" pour les libellés de dates (noms d'oiseaux viennent de l'API / BirdNET)
+    this._config = { title: "Daily Activity", locale: "", ...config };
     this._render();
   }
 
@@ -90,6 +91,25 @@ class BirdnetHourlyCard extends HTMLElement {
     return `rgb(${Math.round(187-t*150)},${Math.round(222-t*150)},${Math.round(251-t*80)})`;
   }
 
+  /** RVB pour calculer le contraste du texte sur la cellule. */
+  _cellRgb(count, maxCount) {
+    if (!count) return null;
+    const t = Math.min(count / maxCount, 1);
+    return [
+      Math.round(187 - t * 150),
+      Math.round(222 - t * 150),
+      Math.round(251 - t * 80),
+    ];
+  }
+
+  _cellLabelColor(count, maxCount) {
+    if (!count) return "transparent";
+    const rgb = this._cellRgb(count, maxCount);
+    if (!rgb) return "transparent";
+    const lum = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
+    return lum < 0.52 ? "#ffffff" : "#153454";
+  }
+
   _daylightColor(hour, rH, sH) {
     if (rH === null || sH === null) return "#dde3ee";
     if (hour < rH-1 || hour > sH+1) return "#b0bacf";
@@ -105,7 +125,8 @@ class BirdnetHourlyCard extends HTMLElement {
 
   _fmtDay(iso)  {
     const d = new Date(iso + "T12:00:00");
-    return d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+    const loc = this._config.locale || undefined;
+    return d.toLocaleDateString(loc, { month: "short", day: "numeric" });
   }
 
   _fmtWeek(yw)  {
@@ -116,7 +137,8 @@ class BirdnetHourlyCard extends HTMLElement {
 
   _fmtMonth(ym) {
     const [y, m] = ym.split("-");
-    return new Date(+y, +m-1, 1).toLocaleDateString(undefined,{month:"short"});
+    const loc = this._config.locale || undefined;
+    return new Date(+y, +m - 1, 1).toLocaleDateString(loc, { month: "short" });
   }
 
   _colLabel(col) {
@@ -140,8 +162,13 @@ class BirdnetHourlyCard extends HTMLElement {
   /* ── Helpers ──────────────────────────────────────────────── */
 
   _fmtDate(iso) {
-    return new Date(iso+"T12:00:00").toLocaleDateString(undefined,
-      {weekday:"short",day:"numeric",month:"short",year:"numeric"});
+    const loc = this._config.locale || undefined;
+    return new Date(iso + "T12:00:00").toLocaleDateString(loc, {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
   }
 
   _cellW() {
@@ -309,9 +336,9 @@ class BirdnetHourlyCard extends HTMLElement {
           border-radius: 4px;
           font-size: 0.65rem; font-weight: 700;
           text-align: center; line-height: 26px;
-          color: #2d4a6e;
+          text-shadow: 0 0 2px rgba(0,0,0,0.25);
         }
-        .det-cell.empty { color: transparent; }
+        .det-cell.empty { color: transparent; text-shadow: none; }
 
         /* states */
         .state-box {
@@ -376,10 +403,14 @@ class BirdnetHourlyCard extends HTMLElement {
       for (const c of arr) if (c > maxCount) maxCount = c;
     }
 
-    // Daylight (hourly only)
+    // Daylight (hourly) : préférer les heures calculées par l'API (même fuseau que les colonnes 0–23)
     let rH = null, sH = null;
-    if (isHourly && data.sunrise) rH = new Date(data.sunrise * 1000).getHours();
-    if (isHourly && data.sunset)  sH = new Date(data.sunset  * 1000).getHours();
+    if (isHourly) {
+      if (Number.isInteger(data.sunrise_hour)) rH = data.sunrise_hour;
+      else if (data.sunrise) rH = new Date(data.sunrise * 1000).getHours();
+      if (Number.isInteger(data.sunset_hour)) sH = data.sunset_hour;
+      else if (data.sunset) sH = new Date(data.sunset * 1000).getHours();
+    }
 
     const daylightRow = isHourly ? `
       <tr>
@@ -403,9 +434,10 @@ class BirdnetHourlyCard extends HTMLElement {
 
       const cells = counts.map((count, i) => {
         const bg  = this._cellColor(count, maxCount);
+        const fg  = this._cellLabelColor(count, maxCount);
         const cls = count ? "det-cell" : "det-cell empty";
         const lbl = count > 0 ? (count > 999 ? "999+" : count) : "";
-        return `<td><div class="${cls}" style="background:${bg};width:${cw}px">${lbl}</div></td>`;
+        return `<td><div class="${cls}" style="background:${bg};color:${fg};width:${cw}px">${lbl}</div></td>`;
       }).join("");
 
       return `<tr>
@@ -423,7 +455,11 @@ class BirdnetHourlyCard extends HTMLElement {
   getCardSize() { return 8; }
 
   static getStubConfig() {
-    return { api_url: "http://192.168.x.x:8081", title: "Daily Activity" };
+    return {
+      api_url: "http://192.168.x.x:8081",
+      title: "Daily Activity",
+      locale: "fr-FR",
+    };
   }
 }
 

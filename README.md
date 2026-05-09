@@ -53,9 +53,12 @@ Dans un tableau de bord, **Ajouter une carte → Manuel** :
 type: custom:birdnet-hourly-card
 api_url: "http://192.168.x.x:8081"
 title: "Daily Activity"
+locale: "fr-FR" # optionnel : format des dates (jour, mois) dans la carte
 ```
 
 Remplacer `192.168.x.x` par l'IP du serveur où tourne **birdnet-api2ha** (port 8081 par défaut).
+
+Les **noms d’oiseaux** affichés viennent de l’API (champ `common_name`), lui-même lu depuis la table `labels` de BirdNET-Go selon les colonnes disponibles (`common_name`, `name`, etc.). Pour des libellés en français, configure le **locale** BirdNET-Go (ex. `fr`) et vérifie la base avec `PRAGMA table_info(labels);`.
 
 ---
 
